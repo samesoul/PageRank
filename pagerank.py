@@ -160,7 +160,7 @@ class WebGraph():
                 # IF statement that compares distance between x_k and x_k-1.
                 # If it's less than epsilon, then we stop.
                 if diff_val < epsilon:
-                    print(k)
+                    # print(k)
                     break
             x = xk.squeeze()
             return x
