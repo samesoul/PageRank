@@ -3,7 +3,7 @@ Implementation of simple search engine for the website https://www.lawfareblog.c
 Coursework for CSCI145: Data Mining.
 
 ## Task 1: Power Method 
-**Part 1**: For my implementation on the `small.csv.gz` graph, I get the following output:
+**Part 1:**: For my implementation on the `small.csv.gz` graph, I get the following output:
 ```
 $ python3 pagerank.py --data=./small.csv.gz --verbose
 DEBUG:root:computing indices
@@ -16,7 +16,7 @@ INFO:root:rank=4 pagerank=9.9210e-02 url=3
 INFO:root:rank=5 pagerank=8.9347e-02 url=1
 ```
 
-**Part 2**: The `pagerank.py` file has option `--search_query`, which takes a string as a parameter.
+**Part 2:**: The `pagerank.py` file has option `--search_query`, which takes a string as a parameter.
 This gives us the most important pages on the blog related to our query.
 
 My results for the search queries `corona`, `trump`, and `iran` are as follows:
@@ -58,7 +58,7 @@ INFO:root:rank=8 pagerank=7.1939e-03 url=www.lawfareblog.com/us-names-iranian-re
 INFO:root:rank=9 pagerank=5.9405e-03 url=www.lawfareblog.com/iran-shoots-down-us-drone-domestic-and-international-legal-implications
 ```
 
-**Part 3**
+**Part 3:**
 The `--filter_ratio` argument (range from 0 to 1) removes all pages that have more links than the specified fraction.
 To demonstrate this, compare the following two output.
 ```
@@ -89,7 +89,7 @@ INFO:root:rank=8 pagerank=1.5597e+00 url=www.lawfareblog.com/summary-david-holme
 INFO:root:rank=9 pagerank=9.1265e-01 url=www.lawfareblog.com/events
 ```
 
-**Part 4**
+**Part 4:**
 The following output are the results from running the following four commands:
 ```
 $ python3 pagerank.py --data=./lawfareblog.csv.gz --verbose 
@@ -166,7 +166,7 @@ My code took around 30, 70 iterations for the commands without the `alpha` argum
 
 ## Task 2: the personalization vector
 
-**Part 1**
+**Part 1:**
 Implemented the `WebGraph.make_personalization_vector` function.
 This function enables the `--personlization_vector_query` command line argument, which provides an alternative method for searching by doing the filtering on the personalization vector.
 
@@ -185,7 +185,7 @@ INFO:root:rank=8 pagerank=9.4298e-02 url=www.lawfareblog.com/lawfare-podcast-mom
 INFO:root:rank=9 pagerank=8.7207e-02 url=www.lawfareblog.com/house-oversight-committee-holds-day-two-hearing-government-coronavirus-response
 ```
 
-**Part 2**
+**Part 2:**
 The `--personalization_vector_query` option also allows us to find what webpages are related to a query that don't explicitly mention the query, which can help us map out similar topics.
 
 Below is an example of webpage ranking by their `corona` importance, but removing webpages explicitly mentioning `corona` from the results.
@@ -203,7 +203,7 @@ INFO:root:rank=8 pagerank=6.4847e-02 url=www.lawfareblog.com/us-moves-dismiss-ca
 INFO:root:rank=9 pagerank=6.4847e-02 url=www.lawfareblog.com/livestream-house-armed-services-committee-holds-hearing-priorities-missile-defense
 ```
 
-**Part 3**
+**Part 3:**
 To explore a national security topic other than coronavirus, I searched articles related to `guantanamo` but did not explicitly contain the word `guantanamo`. The related articles were largely comprised of hearings, briefings, and congressional documents, in addition to prolific cases of unethical detention such as [Al Alawai vs. Trump](https://www.supremecourt.gov/opinions/18pdf/18-740_2c8f.pdf). 
 ```
 $ python3 pagerank.py --data=./lawfareblog.csv.gz --filter_ratio=0.2 --personalization_vector_query='guantanamo' --search_query='-guantanamo'
