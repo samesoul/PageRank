@@ -1,5 +1,6 @@
 # PageRank
-Implementation of simple search engine for the website https://www.lawfareblog.com. CSCI145: Data Mining Assignment.
+Implementation of simple search engine for the website https://www.lawfareblog.com. 
+Coursework for CSCI145: Data Mining.
 
 ## Task 1: Power Method 
 **Part 1**: For my implementation on the `small.csv.gz` graph, I get the following output:
