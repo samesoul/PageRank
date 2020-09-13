@@ -3,7 +3,7 @@ Implementation of simple search engine for the website https://www.lawfareblog.c
 Coursework for CSCI145: Data Mining.
 
 ## Task 1: Power Method 
-**Part 1:**: For my implementation on the `small.csv.gz` graph, I get the following output:
+**Part 1:** For my implementation on the `small.csv.gz` graph, I get the following output:
 ```
 $ python3 pagerank.py --data=./small.csv.gz --verbose
 DEBUG:root:computing indices
@@ -16,7 +16,7 @@ INFO:root:rank=4 pagerank=9.9210e-02 url=3
 INFO:root:rank=5 pagerank=8.9347e-02 url=1
 ```
 
-**Part 2:**: The `pagerank.py` file has option `--search_query`, which takes a string as a parameter.
+**Part 2:** The `pagerank.py` file has option `--search_query`, which takes a string as a parameter.
 This gives us the most important pages on the blog related to our query.
 
 My results for the search queries `corona`, `trump`, and `iran` are as follows:
