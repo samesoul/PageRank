@@ -59,7 +59,7 @@ INFO:root:rank=9 pagerank=5.9405e-03 url=www.lawfareblog.com/iran-shoots-down-us
 ```
 
 **Part 3**
-The `--filter_ratio` argument (0,1) removes all pages that have more links than the specified fraction.
+The `--filter_ratio` argument (range from 0 to 1) removes all pages that have more links than the specified fraction.
 To demonstrate this, compare the following two output.
 ```
 $ python3 pagerank.py --data=./lawfareblog.csv.gz
