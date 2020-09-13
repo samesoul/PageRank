@@ -162,7 +162,7 @@ INFO:root:rank=8 pagerank=1.0863e+00 url=www.lawfareblog.com/water-wars-us-china
 INFO:root:rank=9 pagerank=1.0863e+00 url=www.lawfareblog.com/water-wars-sinking-feeling-philippine-china-relations
 ```
 
-My code took around 30, 70 iterations for the commands without the `alpha` arguments, while the calls with `alpha` arguments took considerably longer. 
+My code took around 30, 70 iterations for the commands without the `alpha` arguments, while the calls with `alpha` arguments both took their respective `max_iteration` values.  
 
 ## Task 2: the personalization vector
 
@@ -186,7 +186,7 @@ INFO:root:rank=9 pagerank=8.7207e-02 url=www.lawfareblog.com/house-oversight-com
 ```
 
 **Part 2**
-The `--personalization_vector_query` option is also allows us to find what webpages are related to a query that don't explicitly mention the query, which can help us map out similar topics.
+The `--personalization_vector_query` option also allows us to find what webpages are related to a query that don't explicitly mention the query, which can help us map out similar topics.
 
 Below is an example of webpage ranking by their `corona` importance, but removing webpages explicitly mentioning `corona` from the results.
 ```
