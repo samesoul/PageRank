@@ -9,19 +9,16 @@ import math
 import torch
 import gzip
 import csv
-
+import gensim.downloader
 import logging
 
+global vectors
+model = 'glove-twitter-25'
+vectors = gensim.downloader.load(model)
 
 class WebGraph():
-
+    
     def __init__(self, filename, max_nnz=None, filter_ratio=None):
-        '''
-        Initializes the WebGraph from a file.
-        The file should be a gzipped csv file.
-        Each line contains two entries: the source and target corresponding to a single web link.
-        This code assumes that the file is sorted on the source column.
-        '''
 
         self.url_dict = {}
         indices = []
@@ -31,9 +28,9 @@ class WebGraph():
 
         # loop through filename to extract the indices
         logging.debug('computing indices')
-        with gzip.open(filename, newline='', mode='rt') as f:
-            for i, row in enumerate(csv.DictReader(f)):
-                if max_nnz is not None and i > max_nnz:
+        with gzip.open(filename,newline='',mode='rt') as f:
+            for i,row in enumerate(csv.DictReader(f)):
+                if max_nnz is not None and i>max_nnz:
                     break
                 import re
                 regex = re.compile(r'.*((/$)|(/.*/)).*')
@@ -42,27 +39,27 @@ class WebGraph():
                 source = self._url_to_index(row['source'])
                 target = self._url_to_index(row['target'])
                 target_counts[target] += 1
-                indices.append([source, target])
+                indices.append([source,target])
 
         # remove urls with too many in-links
         if filter_ratio is not None:
             new_indices = []
-            for source, target in indices:
-                if target_counts[target] < filter_ratio * len(self.url_dict):
-                    new_indices.append([source, target])
+            for source,target in indices:
+                if target_counts[target] < filter_ratio*len(self.url_dict):
+                    new_indices.append([source,target])
             indices = new_indices
 
-        # compute the values that correspond to the indices variable
+        # compute the values
         logging.debug('computing values')
         values = []
         last_source = indices[0][0]
         last_i = 0
-        for i, (source, target) in enumerate(indices + [(None, None)]):
-            if source == last_source:
+        for i,(source,target) in enumerate(indices+[(None,None)]):
+            if source==last_source:
                 pass
             else:
-                total_links = i - last_i
-                values.extend([1 / total_links] * total_links)
+                total_links = i-last_i
+                values.extend([1/total_links]*total_links)
                 last_source = source
                 last_i = i
 
@@ -70,30 +67,21 @@ class WebGraph():
         i = torch.LongTensor(indices).t()
         v = torch.FloatTensor(values)
         n = len(self.url_dict)
-        self.P = torch.sparse.FloatTensor(i, v, torch.Size([n, n]))
+        self.P = torch.sparse.FloatTensor(i, v, torch.Size([n,n]))
         self.index_dict = {v: k for k, v in self.url_dict.items()}
+    
 
     def _url_to_index(self, url):
-        '''
-        given a url, returns the row/col index into the self.P matrix
-        '''
         if url not in self.url_dict:
             self.url_dict[url] = len(self.url_dict)
         return self.url_dict[url]
 
+
     def _index_to_url(self, index):
-        '''
-        given a row/col index into the self.P matrix, returns the corresponding url
-        '''
         return self.index_dict[index]
 
+
     def make_personalization_vector(self, query=None):
-        '''
-        If query is None, returns the vector of 1s.
-        If query contains a string,
-        then each url satisfying the query has the vector entry set to 1;
-        all other entries are set to 0.
-        '''
         n = self.P.shape[0]
 
         if query is None:
@@ -101,77 +89,63 @@ class WebGraph():
 
         else:
             v = torch.zeros(n)
-
-            for i in self.index_dict:
-                if url_satisfies_query(self.index_dict[i], query):
+            for url,i in self.url_dict.items():
+                if url_satisfies_query(url, query):
                     v[i] = 1
-
+        
         v_sum = torch.sum(v)
-        assert (v_sum > 0)
+        assert(v_sum>0)
         v /= v_sum
 
         return v
 
 
     def power_method(self, v=None, x0=None, alpha=0.85, max_iterations=1000, epsilon=1e-6):
-        '''
-        This function implements the power method for computing the pagerank.
-
-        The self.P variable stores the $P$ matrix.
-        You will have to compute the $a$ vector and implement Equation 5.1 from "Deeper Inside Pagerank."
-        '''
         with torch.no_grad():
             n = self.P.shape[0]
 
+            # 
+            nondangling_nodes = torch.sparse.sum(self.P,1).indices()
+            a = torch.ones([n,1])
+            a[nondangling_nodes] = 0
+
             # create variables if none given
             if v is None:
-                v = torch.Tensor([1 / n] * n)
-                v = torch.unsqueeze(v, 1)
+                v = torch.Tensor([1/n]*n)
+                v = torch.unsqueeze(v,1)
             v /= torch.norm(v)
 
             if x0 is None:
-                x0 = torch.Tensor([1 / (math.sqrt(n))] * n)
-                x0 = torch.unsqueeze(x0, 1)
+                x0 = torch.Tensor([1/(math.sqrt(n))]*n)
+                x0 = torch.unsqueeze(x0,1)
             x0 /= torch.norm(x0)
 
-            # Computing the a vector:
-            a = torch.zeros(n)  # Initialize with n zero's
-
-            for i,j in enumerate(self.P):
-                # If the sum of the columns of row i is 0
-                if torch.sparse.sum(j) == 0:
-                    # Then we set that row's corresponding value in a vector to 1
-                    a[i] == 1
-            # Sets a's dimensions to nx1
-            a = torch.unsqueeze(a,1)
-
-            # Initializes our difference value that we compare to epsilon
-            diff_val = epsilon + 1
-            xk = x0
-
-            # Computes xk vectors
-            for k in range(0, max_iterations):
-                xt = xk
-                xk = torch.sparse.addmm(torch.zeros(n, 1), self.P.t(), xt, 0, alpha).t() \
-                     + (torch.sparse.addmm(torch.zeros(1, 1), a.t(), xt, 0, alpha) + (1 - alpha)) * v.t()
-                diff_val = torch.norm(xk.t() - xt)
-                xk = xk.t()
-
-                # IF statement that compares distance between x_k and x_k-1.
-                # If it's less than epsilon, then we stop.
-                if diff_val < epsilon:
-                    # print(k)
+            # main loop
+            xprev = x0
+            x = xprev.detach().clone()
+            for i in range(max_iterations):
+                xprev = x.detach().clone()
+                q = (alpha*x.t()@a + (1-alpha)) * v.t()
+                x = torch.sparse.addmm(
+                        q.t(),
+                        self.P.t(),
+                        x,
+                        beta=1,
+                        alpha=alpha
+                        )
+                x /= torch.norm(x)
+                accuracy = torch.norm(x-xprev)
+                logging.debug('i='+str(i)+' accuracy='+str(accuracy))
+                if accuracy < epsilon:
                     break
-            x = xk.squeeze()
-            return x
+
+            return x.squeeze()
+
 
     def search(self, pi, query='', max_results=10):
-        '''
-        Logs all urls that match the query.
-        Results are displayed in sorted order according to the pagerank vector pi.
-        '''
         n = self.P.shape[0]
-        vals, indices = torch.topk(pi, n)
+        k = min(max_results,n)
+        vals,indices = torch.topk(pi,n)
 
         matches = 0
         for i in range(n):
@@ -180,11 +154,10 @@ class WebGraph():
             index = indices[i].item()
             url = self._index_to_url(index)
             pagerank = vals[i].item()
-            if url_satisfies_query(url, query):
-                logging.info(f'rank={matches} pagerank={pagerank:0.4e} url={url}')
+            if url_satisfies_query(url,query):
+                logging.info('rank='+str(matches)+' pagerank='+str(pagerank)+' url='+url)
                 matches += 1
-
-
+    
 def url_satisfies_query(url, query):
     '''
     This functions supports a moderately sophisticated syntax for searching urls for a query string.
@@ -212,6 +185,15 @@ def url_satisfies_query(url, query):
     '''
     satisfies = False
     terms = query.split()
+    sim_words = []
+    for term in terms: 
+        if term[0] == '-':
+            pass
+        if term[0] != '-':
+            sim = vectors.most_similar(term)
+            for i in range(5):
+                sim_words.append(sim[i][0])
+    terms.extend(sim_words)
 
     num_terms = 0
     for term in terms:
@@ -229,12 +211,11 @@ def url_satisfies_query(url, query):
     return satisfies
 
 
-if __name__ == '__main__':
+if __name__=='__main__':
     import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', required=True)
-    parser.add_argument('--personalization_vector_query')
+    parser.add_argument('--personalization_vector_query', default='')
     parser.add_argument('--search_query', default='')
     parser.add_argument('--filter_ratio', type=float, default=None)
     parser.add_argument('--alpha', type=float, default=0.85)
